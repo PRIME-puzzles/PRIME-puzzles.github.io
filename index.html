@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="PRIME is a puzzle-based framework to measure how implicit biases affect models when performing complex reasoning tasks.">
+  <meta name="keywords" content="PRIME, Logic Puzzle">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PRIME: Evaluating Implicit Biases in LLM Reasoning through Logic Grid Puzzles</title>
+
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-PYVRSFMDRL');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro|Share+Tech+Mono"
+        rel="stylesheet">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Emoji:wght@300..700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="icon" href="./static/images/favicon.svg">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+  <script
+      type="text/javascript"
+      src="./static/js/sort-table.js"
+      defer
+    ></script>
+
+<style>
+.logostyle {
+    font-weight: bold;
+    background: -webkit-linear-gradient(#444393, #09A5D9); 
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent;
+    /*
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.05em;
+    */
+}
+#results {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  border-collapse: collapse;
+  width: 100%;
+  text-align: center;
+  margin: auto;
+  margin-top: 1em;
+  margin-bottom: 2em;
+}
+thead {
+  background: #ddd;
+}
+
+#results table th {
+  border: 1px solid #ddd;
+  padding: 8px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  font-size: 16px;
+  text-align: center;
+  font-weight: 600;
+  background-color: var(--UCLA-darkblue);
+  color: white;
+}
+
+table#results.js-sort-0 tbody tr td:nth-child(1),
+table#results.js-sort-1 tbody tr td:nth-child(2),
+table#results.js-sort-2 tbody tr td:nth-child(3),
+table#results.js-sort-3 tbody tr td:nth-child(4),
+table#results.js-sort-4 tbody tr td:nth-child(5),
+table#results.js-sort-5 tbody tr td:nth-child(6),
+table#results.js-sort-6 tbody tr td:nth-child(7),
+table#results.js-sort-7 tbody tr td:nth-child(8),
+table#results.js-sort-8 tbody tr td:nth-child(9),
+table#results.js-sort-9 tbody tr td:nth-child(10),
+table#results.js-sort-10 tbody tr td:nth-child(11),
+table#results.js-sort-11 tbody tr td:nth-child(12),
+table#results.js-sort-12 tbody tr td:nth-child(13),
+table#results.js-sort-13 tbody tr td:nth-child(14),
+table#results.js-sort-14 tbody tr td:nth-child(15) {
+  border-left: #dee;
+}
+
+#results td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+
+#results tr:hover {
+  background-color: #ddd;
+}
+
+.js-sort-number:hover {
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.best-score-text {
+  color: #c6011f;
+}
+
+.tifa {
+  background-color: rgb(252, 220, 220);
+}
+
+.dsg {
+  background-color: rgb(220, 239, 245);
+}
+
+.llmscore {
+  background-color: lightgoldenrodyellow;
+}
+
+@font-face {
+    font-family: "PlayStation";
+    src: url("./static/fonts/EmotionEngineBold.ttf");
+  }
+
+  @font-face {
+    font-family: "PSLogo";
+    src: url("./static/fonts/Perspire.ttf");
+  }
+
+  .psfont {
+    font-family: "PlayStation";
+    font-variant:small-caps; 
+  }
+  
+  .pslogo {
+    font-family: "PSLogo";
+  }
+
+  .list {
+    margin-left: 1em;
+  }
+
+  .list li {
+    list-style-type: circle;
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
+  }
+  
+  p a {
+    text-decoration: none;
+    font-weight:600;
+    color: rgb(50, 115, 228) !important;
+  }
+
+  li a {
+    text-decoration: none;
+    font-weight:600;
+    color: rgb(50, 115, 228) !important;
+  }
+
+  p a:hover {
+    text-decoration: underline;
+  }
+
+  li a:hover {
+    text-decoration: underline;
+  }
+
+  img.pthumb {
+    height: 10em; border: 1px solid black; padding-right:0.1em;
+  }
+
+</style>
+
+</head>
+<body>
+
+<!-- We introduce PRIME (Puzzle Reasoning for Implicit Biases in Model Evaluation) a puzzle-based framework to measure how implicit biases affect models when performing complex reasoning tasks. PRIME includes stereotypical, anti-stereotypical, and generic puzzle variants generated from a shared puzzle structure, allowing for controlled and fine-grained comparisons. Our use of logic puzzles allows automatic generation and verification, as well as variability in complexity and biased settings.
+
+Overall, we find that LLMs consistently perform best on stereotypical puzzles and worst on anti-stereotypical ones across puzzle sizes and models, suggesting that stereotype-aligned associations function as reasoning shortcuts. 
+While these effects are most pronounced in the bias-probing categories, their influence on demographically neutral categories is limited. Models also tend to make more stereotypical errors rather than anti-stereotypical ones. 
+We also find CoT prompting to aid in bias mitigation by substantially improving model performance and narrowing the bias gap more consistently than static debiasing prompts. 
+These findings highlight the limitations of current alignment and safety training in models, which can be more effective at concealing explicit bias than addressing implicit biases that emerge during reasoning. -->
+
+<!--nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+  <div class="navbar-menu">
+    <div class="navbar-start" style="flex-grow: 1; justify-content: center;">
+      <a class="navbar-item" href="https://keunhong.com">
+      <span class="icon">
+          <i class="fas fa-home"></i>
+      </span>
+      </a>
+
+      <div class="navbar-item has-dropdown is-hoverable">
+        <a class="navbar-link">
+          More Research
+        </a>
+        <div class="navbar-dropdown">
+          <a class="navbar-item" href="https://hypernerf.github.io">
+            HyperNeRF
+          </a>
+          <a class="navbar-item" href="https://nerfies.github.io">
+            Nerfies
+          </a>
+          <a class="navbar-item" href="https://latentfusion.github.io">
+            LatentFusion
+          </a>
+          <a class="navbar-item" href="https://photoshape.github.io">
+            PhotoShape
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</nav-->
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title"> 
+            <!--img src="./static/images/ts2logo.svg" style="height: 0.7em;" alt="TS2"/--> 
+            <emph>PRIME:</emph> Evaluating Implicit Biases in LLM Reasoning through Logic Grid Puzzles
+            </h1>
+
+          <div class="is-size-5 publication-authors">
+            <span class="author-block" style="padding-right:6pt;">
+              <a href="https://fatimajahara.com/">Fatima Jahara</a><sup><img width="15pt" src="static/images/psc.svg"/></sup>
+            </span>
+            <!-- <span class="author-block" style="padding-right:6pt;">
+              <a href="https://arenaa.github.io/">Mahsa Khoshnoodi</a><sup><img width="15pt" src="static/images/psx.svg"/><img width="15pt" src="static/images/pst.svg"/></sup></span>
+            <span class="author-block" style="padding-right:6pt;">
+              <a href="https://fatimajahara.com/">Fatima Jahara</a><sup><img width="15pt" src="static/images/psx.svg"/><img width="15pt" src="static/images/pst.svg"/></sup></span>
+            <span class="author-block" style="padding-right:6pt;">
+              <a href="https://yujielu10.github.io/">Yujie Lu</a><sup><img width="15pt" src="static/images/psc.svg"/></sup>
+            </span> -->
+            <span class="author-block" style="padding-right:6pt;">
+              <a href="https://www.cs.jhu.edu/~mdredze/">Mark Dredze</a><sup><img width="15pt" src="static/images/pst.svg"/></sup>
+            </span>
+            <span class="author-block" style="padding-right:6pt;">
+              <a href="https://sharonlevy.github.io/">Sharon Levy</a><sup><img width="15pt" src="static/images/psc.svg"/></sup>
+            </span>
+          </div>
+
+          <div class="is-size-5 publication-authors">
+            <!-- <span class="author-block" style="font-style: italic;padding-right:6pt;"><sup><img width="15pt" src="static/images/psx.svg"/></sup><b>Co-first authors</b></span> -->
+            <span class="author-block" style="padding-right:6pt;"><sup><img width="15pt" src="static/images/psc.svg"/></sup>Rutgers University</span>
+            <span class="author-block" style="padding-right:6pt;"><sup><img width="15pt" src="static/images/pst.svg"/></sup>John Hopkins University</span>
+          </div>
+
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- PDF Link. -->
+              <!--span class="link-block">
+                <a href="https://arxiv.org/pdf/2011.12948"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fas fa-file-pdf"></i>
+                  </span>
+                  <span>Paper</span>
+                </a>
+              </span-->
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2511.06160"
+                   class="external-link button is-normal is-rounded is-dark"
+                   style="background-color: #c6011f;">
+                  <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <!-- Video Link. -->
+              <!--span class="link-block">
+                <a href="https://www.youtube.com/watch?v=MrKrnHhk8IA"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-youtube"></i>
+                  </span>
+                  <span>Video</span>
+                </a>
+              </span-->
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href="https://github.com/FatimaJahara/PRIME.git"
+                   class="external-link button is-normal is-rounded is-dark"
+                   style="background: -webkit-linear-gradient(#444393, #09A5D9);">
+                  <span class="icon">
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code</span>
+                  </a>
+              </span>
+              <!-- Dataset Link. -->
+              <span class="link-block">
+                <a href="https://github.com/FatimaJahara/PRIME/tree/main/data/puzzle%20dataset"
+                   class="external-link button is-normal is-rounded is-light"
+                   style="background-color: #FFD21E;">
+                  <span class="icon">
+                      <!--img src="./static/images/hf-logo.svg" style="height:2em;"/-->
+                      <!-- <span style="font-family: Noto Emoji; font-size: larger; font-weight: 900;">🤗</span> -->
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Dataset</span>
+                  </a>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="container is-max-desktop has-text-centered content">
+          <img src="static/images/prime.png" style="width: 100%;"
+          alt="The teaser figure for PRIME."/>
+          <figcaption style="font-size:1.0rem; color:#555; margin-top:0rem;">
+            Figure: <b>QA</b> framework vs the <b>PRIME</b> framework for evaluating implicit biases in LLM reasoning
+          </figcaption>
+  </div>
+  <!-- <div class="has-text-centered" style="max-width: none; margin: 0 auto;">
+    <img src="static/images/prime.png" style="width:85%; max-width:1400px;" alt="The teaser figure for PRIME.">
+  </div>   -->
+  </div>
+  
+</section>
+
+
+<section class="hero teaser">
+
+  <div class="container is-max-desktop">
+
+
+    <div class="body">
+      <h2 class="subtitle ">
+         <b>PRIME</b> (<b>P</b>uzzle <b>R</b>easoning for <b>I</b>mplicit <b>B</b>iases in <b>M</b>odel <b>E</b>valuation) is
+         a novel logic puzzle-based framework, to evaluate the effect of social biases on LLM reasoning. 
+         
+      </h2>
+      <h3 class="subtitle ">
+       We introduce an algorithm to generate logic puzzles of arbitrary complexity with three versions of each puzzle: 
+        a <b></b>neutral baseline, a <b>stereotypical</b> version that confirms social stereotypes and an <b>anti-stereotypical</b> version that contradicts these stereotypes. 
+        This allows to measure how implicit biases affect deductive reasoning via controlled structural variations that preserve logical complexity while altering demographic associations.
+        We also release a dataset of <b>6,048</b> logic grid puzzles for evaluating the influence of gender bias on deductive reasoning in LLMs. 
+        To analyze how biases infiltrate reasoning pathways we introduce three finegrained <b>edit distance</b> metrics and a <b>bias difference</b> metric.
+        
+        
+      </h3>
+
+      <h3 class="subtitle ">
+        Solving logic grid puzzles requires <b>infering relationships between entities</b> using a set of clues, where applying outside world knowledge is not required to arrive at the solution. 
+        For example, to determine a person’s occupation (doctor vs. nurse), gender
+stereotypes (e.g., men are doctors) are irrelevant. 
+However, our experiments show that LLMs demonstrate significant demographic decision bias and reveal that 
+<b>stereotype-aligned associations</b> function as <b>reasoning shortcuts</b> in LLMs.
+Our findings highlight the limitations of current alignment and safety training in models, 
+        which can be more effective at concealing explicit bias than addressing implicit biases that emerge during reasoning.
+PRIME can be used to automatically detect and quantify these decision biases.
+</h3>
+
+</div>
+</div>
+</section>
+
+        <!-- We find these effects to be most pronounced in the <b>bias-probing categories</b> while their influence on <b>demographically neutral categories</b> is <b>limited</b>.
+        Also, language models tend to make <b>more stereotypical errors</b> compared to anti-stereotypical ones in both stereotypical and anti-stereotypical puzzle variants.
+        We also find <b>CoT prompting</h3>b> to aid in bias mitigation by substantially improving model performance and narrowing the bias gap more consistently than static debiasing prompts. 
+        While prior work often treats bias and logical reasoning as distinct, our findings suggest that this separation obscures how implicit biases can compromise deductive reasoning in LLMs.         --> -->
+        <!-- <emph class="logostyle">TS2</emph> can evaluate any T2I faithfulness metric as a <b>black-box</b>.
+      </h3>
+      &nbsp;
+
+
+<!-- We introduce PRIME (Puzzle Reasoning for Implicit Biases in Model Evaluation) a puzzle-based framework to measure how implicit biases affect models when performing complex reasoning tasks. 
+ PRIME includes stereotypical, anti-stereotypical, and generic puzzle variants generated from a shared puzzle structure, allowing for controlled and fine-grained comparisons.
+Our use of logic puzzles allows automatic generation and verification, as well as variability in complexity and biased settings.
+
+Overall, we find that LLMs consistently perform best on stereotypical puzzles and worst on anti-stereotypical ones across puzzle sizes and models, suggesting that stereotype-aligned associations function as reasoning shortcuts. 
+While these effects are most pronounced in the bias-probing categories, their influence on demographically neutral categories is limited. Models also tend to make more stereotypical errors rather than anti-stereotypical ones. 
+We also find CoT prompting to aid in bias mitigation by substantially improving model performance and narrowing the bias gap more consistently than static debiasing prompts. 
+These findings highlight the limitations of current alignment and safety training in models, which can be more effective at concealing explicit bias than addressing implicit biases that emerge during reasoning. -->
+
+
+
+    <section class="section">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column is-full-width">
+            <h2 class="title is-3">Details on PRIME Puzzle Generation</h2>
+            <section class="hero teaser">
+              <div class="container is-max-desktop">
+                <div class="body">
+                  <h2 class="subtitle ">
+                    PRIME consists of puzzle triplets: <b>Generic</b>, <b>Stereotypical</b>, and </b>Anti-stereotypical</b>.
+                    Each triplet consists of a <b>Name</b> column as the anchor, a <b>Bias-Probing</b> column that aligns with or contradicts social stereotypes, and one or more <b>General</b> columns that are bias-irrelevant.
+                    For automatic generation of puzzles, PRIME proceeds in three main steps: 
+                    grid construction, clue generation, and identification of a minimally solvable clue set. 
+                    The grid satisfies the <b>Latin square constraint</b> to ensure each item appears exactly once per row and column. 
+                    To frame different logical constraints and reasoning steps five different clue types are selected from <a href="https://logic.puzzlebaron.com/how-to-solve-a-logic-puzzle.php">Puzzle Baron</a>.
+        
+                    <div class="has-text-centered"
+                      style="display:flex; justify-content:center; align-items:center; gap:1rem; margin-top:2rem;">
+                      <img src="static/images/setup.png" style="width:70%;" alt="PRIME puzzle setup">
+                    </div>   
+                    <!-- <div class="has-text-centered" style="margin-top:1.5rem"></div>
+                    <figure style="display:inline-block; margin-top:1.5rem;">
+                      <img src="static/images/setup.png" style="width:75%;" alt="Bias difference results">
+                      <figcaption style="font-size:1rem; color:#555; margin-top:0.5rem;">
+                        Figure 2: <b>General</b>, <b>Stereotypical</b>, and <b>Anti-stereotypical</b> puzzle setup in PRIME.
+                      </figcaption>
+                    </figure>
+                  </div> -->
+                  <!-- </h2>
+                  <h3 class="subtitle ">
+                    
+                  </h3>
+                  <h3 class="subtitle "> -->
+
+                  <!-- </h3> -->
+                  <!-- &nbsp; -->
+                </div>
+              </div>
+            </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column is-full-width">
+            <h2 class="title is-3">Details on PRIME Evaluation Metrics</h2>
+            <section class="hero teaser">
+              <div class="container is-max-desktop">
+                <div class="body">
+                  <h2 class="subtitle ">
+                    <b>Edit Distance</b> quantifies how much an LLM's predicted puzzle solution deviates from the ground truth. 
+                    It measures how many swaps away a predicted puzzle is from the ground truth. 
+                    We use three different edit distances:
+                  <b>overfall edit distance</b> provides a holistic measure of overall reasoning accuracy
+                  <b>bias probing edit distance</b> provides targeted performance of identity-based assignments, and 
+                  <b>general edit distance</b> assesses whether stereotype cues affect general reasoning.
+
+                  <!-- <div class="has-text-centered"
+                  style="display:flex; justify-content:center; align-items:center; gap:1rem; margin-top:2rem;">
+                  <img src="static/images/overall_ed.png" style="width:70%;" alt="Edit distance results">
+                </div>   
+
+                <div class="has-text-centered"
+                  style="display:flex; justify-content:center; align-items:center; gap:1rem; margin-top:2rem;">
+                  <img src="static/images/bias_general_ed.png" style="width:70%;" alt="Bias difference results">
+                  <figcaption style="font-size:1.0rem; color:#555; margin-top:0rem;">
+                    Figure 3: Calculation of <b>Overall</b>, <b>Bias Probing</b> and <b>General Edit Distance</b>.
+                  </figcaption>
+                </div>  -->
+
+                <div class="has-text-centered" style="margin-top:1.5rem;margin-bottom:1.5rem;">
+                  <figure style="display:inline-block; margin:0;">
+                    <img src="static/images/overall_ed.png" style="width:70%;" alt="Edit distance results">
+                    <!-- <figcaption style="font-size:1rem; color:#555; margin-top:0.5rem;margin-bottom:0.5rem;">
+                      (a) Overall Edit Distance
+                    </figcaption> -->
+                  </figure>
+                
+                  <figure style="display:inline-block; margin-top:1.5rem;">
+                    <img src="static/images/bias_general_ed.png" style="width:70%;" alt="Bias difference results">
+                    <figcaption style="font-size:1rem; color:#555; margin-top:0.5rem;">
+                      Figure: Overall, Bias Probing and General Edit Distance
+                    </figcaption>
+                  </figure>
+                </div>
+                
+
+
+             <!-- <div class="has-text-centered" 
+     style="display:flex; justify-content:center; align-items:center; gap:1rem; margin-top:2rem;">
+  <img src="static/images/overall_ed.png" style="width:48%;" alt="Edit distance results">
+  <img src="static/images/bias_general_ed.png" style="width:44%;" alt="Bias difference results">
+</div> -->
+</h2>
+
+<h3 class="subtitle ">                 
+<b>Bias Difference</b> quantifies shifts in model performance between stereotypical and anti-stereotypical puzzles for each edit distance setting.
+</h3>
+                </div>
+              </div>
+            </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+
+    <section class="section">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column is-full-width">
+            <h2 class="title is-3">Selective Results and Analysis</h2>
+            <section class="hero teaser">
+              <div class="container is-max-desktop">
+                <div class="body">
+                  <h2 class="subtitle ">
+
+                    <div class="has-text-centered"
+                      style="display:flex; justify-content:center; align-items:center; gap:1rem; margin-top:2rem;">
+                      <img src="static/images/result1.png" style="width:90%;" alt="Result 1">
+                    </div>   
+
+
+
+             <div class="has-text-centered" 
+     style="display:flex; justify-content:center; align-items:center; gap:1rem; margin-top:2rem;">
+  <img src="static/images/result2.png" style="width:48%;" alt="Result 2">
+  <img src="static/images/error.png" style="width:46%;" alt="Error Analysis">
+</div>
+
+<!-- <div class="has-text-centered"
+                      style="display:flex; justify-content:center; align-items:center; gap:1rem; margin-top:2rem;">
+                      <img src="static/images/cat.png" style="width:90%;" alt="categorical analysis">
+                    </div>  -->
+
+  <!-- <div class="has-text-centered"
+  style="display:flex; justify-content:center; align-items:center; gap:1rem; margin-top:2rem;">
+  <img src="static/images/cot.png" style="width:100%;" alt="cot analysis">
+</div>  -->
+
+<h3 class="subtitle ">     
+  To learn more about the setup and findings please <a href="https://arxiv.org/abs/2511.06160">read the paper</a>.          
+
+</h3>
+                  </h2>
+                </div>
+              </div>
+            </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+
+
+<!-- <section class="section">
+  <div class="container is-max-desktop">
+
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3">Related Work</h2>
+
+        <div class="content has-text-justified">
+          <p>
+           Our paper is fundamentally based on evaluating implicit bias in LLM decision-making. 
+
+           SeeTrue is the closest work to our philosophy, with its similar focus on using near-neighbor images to assess T2I models, 
+           and investigating mutli-image to single prompt and multi-prompt to single image settings, and also use images.
+            However, they focus more using these examples to build a faithfulness metric that can be used to assess VNLI and VQA tasks directly, 
+            rather than using them to evaluate T2I metrics themselves.
+
+
+
+            <a href="https://scholar.google.com/scholar?q=ZebraLogic+logic+puzzles">
+             ZebraLogic
+            </a> introduces an evaluation framework using logic grid puzzles but focuses on logical reasoning and scaling abilies.
+
+            Several other benchmarks, <a href="https://github.com/Mihir3009/GridPuzzle.io"> GridPuzzle</a>, <a href="https://github.com/arg-tech/MysteryZebra> Mystery-Zebra"</a>, also examine logical reasoning using logic puzzles. 
+            However, PRIME focuses on bias evaluation in social and moral dimension of fairness in LLM decision-making.
+
+
+
+            Our work is fundamentally based on evaluating other groups' metrics. <a href="https://wysiwyr-itm.github.io/">SeeTrue</a> is the closest work to our philosophy,
+            with its similar focus on using near-neighbor images to assess T2I models, and investigating mutli-image to single prompt and multi-prompt to single image settings, and also use images.
+            However, they focus more using these examples to build a faithfulness metric that can be used to assess VNLI and VQA tasks directly, rather than using them to evaluate T2I metrics themselves.
+          </p>
+          <p>
+            The main metrics we analyzed, <a href="https://tifa-benchmark.github.io/">TIFA</a> and <a href="https://google.github.io/dsg/">DSG</a> from Yushi Hu and Jaemin Cho are both very influential.
+            We hope that TS2-guided evaluation will enable better metrics inspired from their work.
+          </p>
+          <p>
+            The captioning based metrics we evaluated, <a href="https://github.com/yujielu10/llmscore">LLMScore</a> and <a href="https://tiger-ai-lab.github.io/VIEScore/">VIEScore</a> both stand
+            to benefit a lot from advancements in VLMs and captioning models.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  </div> -->
+
+  <!-- <div class="hero container">
+    &nbsp;<br>&nbsp;
+  </div> -->
+
+  
+  <div class="container is-max-desktop content has-text-centered" id="BibTeX">
+    <h2 class="title">Publication</h2>
+    <a href="https://arxiv.org/abs/2511.06160">
+    <h4>Evaluating Implicit Biases in LLM Reasoning through Logic Grid Puzzles</h4>
+    <h5>Fatima Jahara, Mark Dredze, Sharon Levy</h5>  </a>
+    
+    <!-- <a href="https://arxiv.org/pdf/2511.06160.pdf">
+    <img src="static/images/paper/paper01.png" class="pthumb"/> <img src="static/images/paper/paper02.png" class="pthumb"/>
+    <img src="static/images/paper/paper03.png" class="pthumb"/> <img src="static/images/paper/paper04.png" class="pthumb"/>
+    <img src="static/images/paper/paper05.png" class="pthumb"/> <img src="static/images/paper/paper06.png" class="pthumb"/>
+    <img src="static/images/paper/paper07.png" class="pthumb"/> <img src="static/images/paper/paper08.png" class="pthumb"/>
+    <img src="static/images/paper/paper09.png" class="pthumb"/> <img src="static/images/paper/paper10.png" class="pthumb"/>
+    <img src="static/images/paper/paper11.png" class="pthumb"/> <img src="static/images/paper/paper12.png" class="pthumb"/>
+    </a> -->
+  </div>
+  <div class="container is-max-desktop content" id="BibTeX">
+    <p>If you use this work, please cite our paper:</p>
+    <pre><code>@misc{jahara2025evaluatingimplicitbiasesllm,
+      title={Evaluating Implicit Biases in LLM Reasoning through Logic Grid Puzzles}, 
+      author={Fatima Jahara and Mark Dredze and Sharon Levy},
+      year={2025},
+      eprint={2511.06160},
+      archivePrefix={arXiv},
+      primaryClass={cs.AI},
+      url={https://arxiv.org/abs/2511.06160}, 
+    }
+</code></pre>
+  </div>
+
+</section>
+
+
+<footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This website is based on the <a href="https://nerfies.github.io">Nerfies</a> and <a href="https://t2iscorescore.github.io/">T2IScoreScore</a>  demo page, which is
+            licensed under a <a rel="license"
+                                                href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+          <p>
+            Use its <a href="https://github.com/nerfies/nerfies.github.io">source code</a> to reproduce and follow its terms of linking back.
+          </p>
+
+        </div>
+      </div>
+    </div>
+</footer>
+
+</body>
+</html>
